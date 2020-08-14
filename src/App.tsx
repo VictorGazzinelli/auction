@@ -1,25 +1,62 @@
-import React from 'react';
-import logo from './logo.svg';
+import React,{ createContext, useState, Dispatch } from 'react';
+import styled from 'styled-components';
+import GlobalStyle from './styles/global'
+import { BrowserRouter, Switch, Route, Redirect } from 'react-router-dom';
+import 'antd/dist/antd.css';
+import Login from './pages/Login/Login';
+import Auction from './pages/Auction/Auction';
+import SignUp from './pages/SignUp/SignUp';
+
+//@ts-ignore
+export const GlobalContext = createContext<IGlobalContext>();
+
+export interface ICurrentUser {
+	AccountId: number;
+	Username: string;
+}
+
+export interface IGlobalContext{
+	currentUser: ICurrentUser | null;
+	setCurrentUser: Dispatch<ICurrentUser | null>;
+}
 
 function App() {
+	const [currentUser, setCurrentUser] = useState<ICurrentUser | null>(null)
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+	<MainWrapper>
+		<GlobalStyle/>
+		<GlobalContext.Provider value={{currentUser: currentUser, setCurrentUser: setCurrentUser}}>
+			<BrowserRouter>
+				<Switch>
+
+					<Route path={"/login"}>
+						<Login/>
+					</Route>
+
+					<Route path={"/signup"}>
+						<SignUp/>
+					</Route>
+
+					{!currentUser && <Redirect to="/login"/>}
+
+					<Route path={"/auction"}>
+						<Auction/>
+					</Route>
+
+					<Redirect from='*' to="/login"/>
+
+				</Switch>
+			</BrowserRouter>
+		</GlobalContext.Provider>
+	</MainWrapper>
   );
 }
 
 export default App;
+
+const MainWrapper = styled.div`
+  	display:flex;
+  	flex:1;
+	background: white;
+`

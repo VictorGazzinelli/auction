@@ -29,7 +29,7 @@ export function useDoRequest<ResultType>(showNotification = false):
     const exceptionSwitch = (status: number | null, data: any) => {
       if(!status || !data)
         return notificationUtils.error("Ops..! Não foi possivel se conectar ao servidor..");
-      return notificationUtils.error(data.msg);
+      return notificationUtils.error(data.Message);
     }
 
     return [doRequest, data, error, loading];

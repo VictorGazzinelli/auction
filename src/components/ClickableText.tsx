@@ -21,6 +21,7 @@ const SSpan = styled.span<{disabled: boolean}>`
     cursor: ${(props) => (props.disabled ? 'not-allowed' : 'pointer')};
     background-color: transparent;
     color:${(props) => (props.disabled ? 'grey' : '#1890ff')};
+    font-size:20px;
 
 
     :hover{
