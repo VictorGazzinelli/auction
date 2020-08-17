@@ -10,7 +10,6 @@ interface IProps {
 let InputLabelValue : string | undefined = undefined;
 
 
-
 export default function InputLabel ({label, setState, value}:IProps){
 
   function onComponentMount(){

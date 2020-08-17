@@ -15,8 +15,6 @@ export default function DateTimeInput({label, currentValue, setState} : IProps){
     return current && current < moment().add(-1,"days").endOf('day');
   } 
 
-  console.log(currentValue)
-
   function onComponentMount(){
     if(currentValue){
       SpecialData = currentValue

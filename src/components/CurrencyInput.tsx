@@ -11,10 +11,6 @@ let CurrencyLabelValue = 0;
 
 
 export default function CurrencyInput({label, setState, value} : IProps){
-  function formatValue(value: number):number{
-    return(value.toString().length > 2 ? +(value/100.0) : +value )
-  }
-
   function onComponentMount(){
     if(value){
       CurrencyLabelValue = value
