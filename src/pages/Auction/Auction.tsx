@@ -1,35 +1,36 @@
 import React, { useState, useContext, useEffect } from 'react'
 import styled from 'styled-components'
-import { Input, Button, Checkbox, Table, Drawer, DatePicker } from 'antd';
+import { Input, Button, Checkbox, Table, Drawer, DatePicker, Space } from 'antd';
 import { useHistory } from 'react-router-dom';
 import ClickableText from '../../components/ClickableText';
 import { GlobalContext, IGlobalContext } from '../../App';
 import { RequestUtils } from '../../utils/requestUtils';
-import { IAuctionDTO, IListAuctionOutput, ICreateAuctionInput, IDeleteAuctionOutput, ICreateAuctionOutput } from '../../services/auction/auctionInterface';
+import { IAuctionDTO, IListAuctionOutput, ICreateAuctionInput, IDeleteAuctionOutput, ICreateAuctionOutput, IEditAuctionOutput, IEditAuctionInput } from '../../services/auction/auctionInterface';
 import { useDoRequest } from '../../hooks/useDoRequest';
 import auctionRequest from '../../services/auction/auctionRequest';
 import notificationUtils from '../../utils/notificationUtils';
-import { ICreateAccountOutput } from '../../services/account/accountInterface';
 import { PlusOutlined } from '@ant-design/icons';
+import moment from 'moment';
+import { render } from '@testing-library/react';
+import CurrencyInput from '../../components/CurrencyInput';
+import DateTimeInput from '../../components/DateTimeInput';
+import DrawerAuction from '../../components/DrawerAuction';
 
 export default function Auction(){
-    const [InitialValue, setInitialValue] = useState<number>(0);
-    const [Name, setName] = useState<string>("");
-    const [OpenedAt, setOpenedAt] = useState<string>("");
-    const [ClosedAt, setClosedAt] = useState<string>("");
-    const [IsItemUsed, setIsItemUsed] = useState<boolean>(false);
+    const [AuctionId, setAuctionId] = useState<number | undefined>(undefined);
     const [drawerCreateAuctionVisible, setDrawerCreateAuctionVisible] = useState<boolean>(false);
     const [drawerEditAuctionVisible, setDrawerEditAuctionVisible] = useState<boolean>(false);
     const [ListValue, setListValue] = useState<Array<IAuctionDTO>>([]);
     const history = useHistory();
 
     const {
-        setCurrentUser, currentUser
+        currentUser, setCurrentUser
     } = useContext<IGlobalContext>(GlobalContext)
 
     const [ ListAuctionsRequest, ListAuctionsResponse] = useDoRequest<IListAuctionOutput>();
     const [ AddAuctionRequest, AddAuctionResponse] = useDoRequest<ICreateAuctionOutput>();
     const [ DeleteAuctionRequest, DeleteAuctionResponse] = useDoRequest<IDeleteAuctionOutput>();
+    const [ EditAuctionRequest, EditAuctionResponse] = useDoRequest<IEditAuctionOutput>();
 
     const columns = [
         {
@@ -37,7 +38,7 @@ export default function Auction(){
             dataIndex: "AuctionId"
         },
         {
-            title: "ValorInicial",
+            title: "Valor Inicial",
             dataIndex: "InitialValue"
         },
         {
@@ -52,12 +53,14 @@ export default function Auction(){
     
         {
             title: "Data de Abertura",
-            dataIndex: "OpenedAt"
+            dataIndex: "OpenedAt",
+            render: (text: string, item: IAuctionDTO) => moment(item.OpenedAt).format("DD/MM/YYYY")
         },
     
         {
             title: "Data de Fechamento",
-            dataIndex: "ClosedAt"
+            dataIndex: "ClosedAt",
+            render: (text: string, item: IAuctionDTO) => moment(item.ClosedAt).format("DD/MM/YYYY")
         },
     
         {
@@ -69,28 +72,9 @@ export default function Auction(){
         {
             title: "",
             dataIndex: "",
-            render: (text: string, item: IAuctionDTO) => currentUser?.AccountId == item.ResponsibleId && <a onClick={() => removeItem(item.AuctionId)}>Excluir</a>,
+            render: (text: string, item: IAuctionDTO) => currentUser?.AccountId == item.ResponsibleId && <Space size="middle"> <a onClick={() => deleteAuction(item.AuctionId)}>Excluir</a> <a onClick={() => editAuction(item.AuctionId)}>Editar</a></Space>
         },
-
-        {
-            title: "",
-            dataIndex: "",
-            render: (text: string, item: IAuctionDTO) => currentUser?.AccountId == item.ResponsibleId && <a onClick={() => editItem(item)}>Editar</a>,
-        },
-    
     ]
-
-    function editItem(item : IAuctionDTO){
-
-    }
-
-    function removeItem(AuctionId: number){
-        DeleteAuctionRequest(() => auctionRequest.DeleteAuction({ AuctionId }))
-    }
-
-    const {
-        setCurrentUser: setUsuarioLogado
-    } = useContext<IGlobalContext>(GlobalContext)
 
     function onComponentMount(){
         ListAuctionsRequest(() => auctionRequest.ListAuction())
@@ -103,25 +87,43 @@ export default function Auction(){
     }
     useEffect(onListAuctionsResponse,[ListAuctionsResponse])
 
-
-    function addAuction(){
-        if(!InitialValue || !Name || !OpenedAt || !ClosedAt){
-            notificationUtils.error("Não é possível criar um leilão sem preencher os dados obrigatórios")
-            return;
-        }
-        const itemToInsert : ICreateAuctionInput = {
+    function addAuction(InitialValue: number, Name: string, OpenedAt: string, ClosedAt: string, IsItemUsed: boolean){
+        const dto : ICreateAuctionInput = {
             InitialValue,
             Name,
             OpenedAt,
             ClosedAt,
             IsItemUsed,  
         }
-        AddAuctionRequest(() => auctionRequest.CreateAuction(itemToInsert))  
+        AddAuctionRequest(() => auctionRequest.CreateAuction(dto))      
+    }
+
+    function onAuctionEdit(InitialValue: number, Name: string, OpenedAt: string, ClosedAt: string, IsItemUsed: boolean){
+        if(!AuctionId) return;
+        EditAuctionRequest(() => auctionRequest.EditAuction({
+            AuctionId,
+            InitialValue,
+            Name,
+            OpenedAt,
+            ClosedAt,
+            IsItemUsed,
+            ResponsibleId: currentUser?.AccountId ?? 0,
+        }))
+    }
+
+    function editAuction(AuctionId: number){
+        setAuctionId(AuctionId)
+        setDrawerEditAuctionVisible(true)
+    }
+
+    function deleteAuction(AuctionId: number){
+        DeleteAuctionRequest(() => auctionRequest.DeleteAuction({ AuctionId }))
     }
 
     function onAuctionAdded() {
         if(!AddAuctionResponse) return;
         setListValue([...ListValue, AddAuctionResponse.Auction])
+        setDrawerCreateAuctionVisible(false)
     }
     useEffect(onAuctionAdded, [AddAuctionResponse])
 
@@ -133,71 +135,40 @@ export default function Auction(){
     }
     useEffect(onAuctionDeleted, [DeleteAuctionResponse])
 
+    function onAuctionEdited() {
+        if(!EditAuctionResponse) return;
+        setListValue(
+            [...ListValue.filter(a => a.AuctionId !== EditAuctionResponse.Auction.AuctionId), EditAuctionResponse.Auction]
+        )
+        setAuctionId(undefined)
+        setDrawerEditAuctionVisible(false)
+    }
+    useEffect(onAuctionEdited, [EditAuctionResponse])
+
     function onLogout(){
-        setUsuarioLogado(null)
+        setCurrentUser(null)
         RequestUtils.setAuthToken('');
     }
 
-    const InputLabel = (label: string, setState: any, type: string) => (
-        <div className="label-input-wrapper">
-            <label>{label}:</label>
-            {type !== "dateTime" && <Input onChange={e => setState(e.target.value)} type={type}/>}
-            {type === "dateTime" && <DatePicker style ={{width: '50%'}}/>}
-        </div>
-    )
+    //onClose, visible, auctionId, onConfirm 
 
     return(
         <>
         <Wrapper>
             <div className='card-wrapper'>
-                {/* <div className="cadastro-wrapper">
-
-                    {InputLabel("Valor inicial", setInitialValue)}
-                    {InputLabel("Nome do leilao", setName)}
-                    {InputLabel("Data abertura", setOpenedAt)}
-                    {InputLabel("Data fechamento", setClosedAt)}
-                </div>
-                <Checkbox 
-                    style={{marginBottom: 10}}
-                    onChange={e => setIsItemUsed(e.target.checked)}
-                >
-                        Item é usado
-                </Checkbox>
-
-                <Button type="primary" onClick={() => setDrawerCreateAuctionVisible(true)}>Cadastrar</Button> */}
-                <ClickableText onClick={() => onLogout()}>Sair</ClickableText> 
                 <div className="table-wrapper">
                     <Table style={{height: 550}} scroll={{ y: 500 }} pagination={false} dataSource={ListValue} columns={columns}/>
                 </div>
                 <Button type="primary" onClick={() => setDrawerCreateAuctionVisible(true)}>
                     <PlusOutlined /> Novo Leilão
                 </Button>
+                <Button type="primary" onClick={() => onLogout()}>Sair</Button> 
             </div>
         </Wrapper>
-        <Drawer
-            title="Novo Leilão"
-            placement="right"
-            closable={true}
-            width={400}
-            onClose={() =>  setDrawerCreateAuctionVisible(false)}
-            visible={drawerCreateAuctionVisible}
-            footer = { <Button type="primary" onClick={() => console.log('ok')}>Cadastrar</Button>}
-        >
-            <div className='card-wrapper'>    
-                    <div className="cadastro-wrapper">
-                        {InputLabel("Valor inicial", setInitialValue, "number")}
-                        {InputLabel("Nome do leilão", setName, "string")}
-                        {InputLabel("Data abertura", setOpenedAt, "dateTime")}
-                        {InputLabel("Data fechamento", setClosedAt, "dateTime")}
-                    </div>
-                </div>
-            <Checkbox 
-            style={{marginBottom: 10}}
-            onChange={e => setIsItemUsed(e.target.checked)}
-            >
-                Item é usado
-            </Checkbox>
-        </Drawer>
+        {/*@ts-ignore*/}
+        <DrawerAuction onClose={() => setDrawerCreateAuctionVisible(false)} visible={drawerCreateAuctionVisible} auctionId={undefined} onConfirm={addAuction} />
+        {/*@ts-ignore*/}
+        <DrawerAuction onClose={() => setDrawerEditAuctionVisible(false)} visible={drawerEditAuctionVisible} auctionId={AuctionId} onConfirm={onAuctionEdit} />
         </>
     ) 
 }

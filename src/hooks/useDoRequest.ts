@@ -2,7 +2,7 @@ import { useState } from 'react';
 import notificationUtils from '../utils/notificationUtils';
 
 export function useDoRequest<ResultType>(showNotification = false):
-    [(request: () => (Promise<any>)) => void, ResultType | null, any, boolean] {
+    [(request: () => (Promise<any>)) => void, ResultType | null, any, boolean, any] {
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -32,5 +32,5 @@ export function useDoRequest<ResultType>(showNotification = false):
       return notificationUtils.error(data.Message);
     }
 
-    return [doRequest, data, error, loading];
+    return [doRequest, data, error, loading, setData];
 }
